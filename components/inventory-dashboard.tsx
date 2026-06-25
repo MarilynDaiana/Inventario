@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Pencil, Plus, Search } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -25,17 +25,75 @@ import {
 import { MetricCards } from "@/components/metric-cards"
 import { StatusBadge } from "@/components/status-badge"
 import { formatCurrency, formatNumber } from "@/lib/format"
-import { CATEGORIES, MOCK_PRODUCTS } from "@/lib/mock-data"
+import { CATEGORIES } from "@/lib/mock-data"
+import { supabase } from "@/lib/supabase"
 import type { Product } from "@/lib/types"
 
 const ALL_CATEGORIES = "all"
 
 export function InventoryDashboard() {
-  // Local state seeded with mock data. Swap MOCK_PRODUCTS for a Supabase
-  // query (or props from a Server Component) when wiring the backend.
-  const [products] = useState<Product[]>(MOCK_PRODUCTS)
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState("")
   const [category, setCategory] = useState<string>(ALL_CATEGORIES)
+
+  // Cargar datos en tiempo real desde Supabase
+  useEffect(() => {
+    async function fetchProducts() {
+      try {
+        setLoading(true)
+        const { data, error } = await supabase
+          .from("productos")
+          .select("*")
+          .order("nombre", { ascending: true })
+
+        if (error) {
+          console.error("❌ ERROR DETALLADO DE SUPABASE:", {
+            message: error.message,
+            details: error.details,
+            hint: error.hint,
+            code: error.code
+          })
+          return
+        }
+
+        if (!data) {
+          console.log("No se devolvieron datos de Supabase.")
+          return
+        }
+
+        const mappedProducts: Product[] = data.map((p: any) => {
+          let currentStatus: "in_stock" | "low_stock" | "out_of_stock" = "in_stock"
+          
+          if (p.stock === 0) {
+            currentStatus = "out_of_stock"
+          } else if (p.stock <= 5) {
+            currentStatus = "low_stock"
+          }
+
+          return {
+            id: p.id,
+            name: p.nombre,
+            sku: p.sku,
+            description: p.descripcion || "",
+            category: p.categoria,
+            price: Number(p.precio),
+            stock: p.stock,
+            status: currentStatus,
+            imageUrl: "",
+          }
+        })
+
+        setProducts(mappedProducts)
+      } catch (err: any) {
+        console.error("❌ ERROR DE EXCEPCIÓN EN JAVASCRIPT:", err.message, err.stack)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchProducts() // 👈 ¡Llamamos a la función aquí para que se ejecute al montar el componente!
+  }, [])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -106,7 +164,13 @@ export function InventoryDashboard() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((product) => (
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="h-24 text-center text-sm text-muted-foreground">
+                    Cargando inventario desde Supabase...
+                  </TableCell>
+                </TableRow>
+              ) : filtered.map((product) => (
                 <TableRow key={product.id}>
                   <TableCell className="font-medium text-foreground">{product.name}</TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground">{product.sku}</TableCell>
@@ -129,10 +193,10 @@ export function InventoryDashboard() {
                   </TableCell>
                 </TableRow>
               ))}
-              {filtered.length === 0 ? (
+              {!loading && filtered.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="h-24 text-center text-sm text-muted-foreground">
-                    No se encontraron productos con los filtros actuales.
+                    No se encontraron productos con los filtros actuales o la base de datos está vacía.
                   </TableCell>
                 </TableRow>
               ) : null}

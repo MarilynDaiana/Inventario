@@ -19,12 +19,13 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import { CATEGORIES } from "@/lib/mock-data"
+import { supabase } from "@/lib/supabase"
 import type { Product, ProductFormValues } from "@/lib/types"
 
 type Errors = Partial<Record<keyof ProductFormValues, string>>
 
 interface ProductFormProps {
-  // When provided, the form behaves as an "edit" form.
+  // Cuando se provee, el formulario se comporta en modo "edición".
   product?: Product
 }
 
@@ -79,12 +80,44 @@ export function ProductForm({ product }: ProductFormProps) {
     e.preventDefault()
     if (!validate()) return
     setSubmitting(true)
-    // Simulate a persistence call. Replace with a Supabase insert/update
-    // (e.g. supabase.from("products").upsert(values)) when ready.
-    await new Promise((resolve) => setTimeout(resolve, 600))
-    console.log("[v0] product submitted:", values)
-    setSubmitting(false)
-    router.push("/")
+
+    try {
+      // Preparamos el objeto con los nombres exactos de la base de datos (Postgres)
+      const databasePayload = {
+        nombre: values.name,
+        sku: values.sku,
+        descripcion: values.description,
+        categoria: values.category,
+        precio: values.price,
+        stock: values.stock,
+      }
+
+      if (isEditing && product) {
+        // Modo edición: actualiza el registro correspondiente
+        const { error } = await supabase
+          .from("productos")
+          .update(databasePayload)
+          .eq("id", product.id)
+
+        if (error) throw error
+      } else {
+        // Modo creación: inserta un registro nuevo
+        const { error } = await supabase
+          .from("productos")
+          .insert([databasePayload])
+
+        if (error) throw error
+      }
+
+      // Redirigir al dashboard principal e invalidar la caché para ver el cambio
+      router.push("/")
+      router.refresh()
+    } catch (err) {
+      console.error("Error al guardar en Supabase:", err)
+      alert("Hubo un problema al guardar el producto. Revisá la consola.")
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
