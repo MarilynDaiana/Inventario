@@ -39,6 +39,18 @@ La IA suele ignorar restricciones profundas de backend o tipados estrictos. Dura
 3. **Historial de Movimientos:** Módulo de auditoría que registra en tiempo real las entradas y salidas de stock con motivos específicos, resolviendo la relación de llaves foráneas (`JOIN`) con la tabla de productos.
 4. **Baja de Productos (UX/UI Optimizada):** Se integró un botón de eliminación que despliega una interfaz de confirmación modal nativa en React y Tailwind CSS, evitando alertas intrusivas del navegador y notificando el éxito de la operación mediante un banner flotante (Toast) temporizado.
 
+
+## 🧪 Pruebas Unitarias (Testing)
+
+El proyecto incluye pruebas unitarias automatizadas orientadas a asegurar la robustez de la lógica de negocio (cálculo de variaciones de stock dinámico y formateo de datos monetarios). 
+
+Para la suite de pruebas se seleccionó **Vitest**, garantizando ejecuciones ultrarrápidas y compatibilidad total con TypeScript.
+
+Para correr los tests en un entorno local, ejecutá el siguiente comando:
+```bash
+pnpm test
+
+
 ## 🚀 Instalación y Ejecución Local
 
 Para correr este proyecto localmente, seguí estos pasos:
