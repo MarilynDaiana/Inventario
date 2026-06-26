@@ -37,12 +37,12 @@ Para correr este proyecto localmente, seguí estos pasos:
 
 1. **Clonar el repositorio:**
    ```bash
-   git clone [https://github.com/MarilynDaiana/Inventario.git](https://github.com/MarilynDaiana/Inventario.git)
+   git clone https://github.com/MarilynDaiana/Inventario.git
    cd Inventario
 
 2. Instalar dependencias
     ```bash
-    npm install
+    pnpm install
 
 3. Configurar variables de entorno:
     Creá un archivo .env.local en la raíz del proyecto y agregá tus credenciales de Supabase:
@@ -51,8 +51,8 @@ Para correr este proyecto localmente, seguí estos pasos:
     NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_clave_anonima_publica
 
 4. Iniciar el servidor de desarrollo:
-    Bash
-    npm run dev
+    ```bash
+    pnpm dev
 
 5. Abrí http://localhost:3000 en tu navegador para ver el resultado.
 
