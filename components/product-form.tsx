@@ -101,12 +101,33 @@ export function ProductForm({ product }: ProductFormProps) {
 
         if (error) throw error
       } else {
-        // Modo creación: inserta un registro nuevo
-        const { error } = await supabase
+        // Modo creación: inserta un registro nuevo y retorna el elemento creado
+        const { data: nuevoProducto, error: errorProducto } = await supabase
           .from("productos")
           .insert([databasePayload])
+          .select() // CLAVE: Devuelve las columnas calculadas/generadas
+          .single() // Asegura que retorne un objeto directo y no un array
 
-        if (error) throw error
+        if (errorProducto) throw errorProducto
+
+        // Si se insertó el producto, disparamos automáticamente el historial
+        if (nuevoProducto) {
+          const { error: errorMovimiento } = await supabase
+            .from("movimientos")
+            .insert([
+              {
+                producto_id: nuevoProducto.id, // Mapea la FK con el uuid del producto
+                tipo: "entrada",
+                cantidad: Number(nuevoProducto.stock),
+                motivo: "Carga inicial de producto",
+              },
+            ])
+
+          if (errorMovimiento) {
+            // Un log por si falla el historial, pero no frena el flujo principal
+            console.error("❌ Error real en movimientos:", errorMovimiento.message, errorMovimiento.details)
+          }
+        }
       }
 
       // Redirigir al dashboard principal e invalidar la caché para ver el cambio
