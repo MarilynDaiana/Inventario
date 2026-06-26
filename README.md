@@ -47,8 +47,8 @@ El proyecto incluye pruebas unitarias automatizadas orientadas a asegurar la rob
 Para la suite de pruebas se seleccionó **Vitest**, garantizando ejecuciones ultrarrápidas y compatibilidad total con TypeScript.
 
 Para correr los tests en un entorno local, ejecutá el siguiente comando:
-```bash
-pnpm test
+    ```bash
+    pnpm test
 
 
 ## 🚀 Instalación y Ejecución Local
