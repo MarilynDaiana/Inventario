@@ -22,12 +22,14 @@ En línea con los requerimientos modernos de velocidad y optimización, este pro
 La IA suele ignorar restricciones profundas de backend o tipados estrictos. Durante el desarrollo, tomé el rol de auditora principal en los siguientes escenarios críticos:
 1. **Validación de Constraints en Postgres:** Al integrar el formulario con Supabase, la IA generaba strings genéricos para los tipos de movimientos. Tuve que intervenir el código para sincronizar los datos del frontend con el `CHECK CONSTRAINT` de la base de datos, evitando fallos de inserción silenciosos.
 2. **Tipado Estricto en TypeScript:** Corregí inconsistencias donde la IA omitía la propiedad obligatoria `status` al mapear las respuestas de la base de datos hacia las interfaces del cliente, asegurando que la aplicación compile sin *warnings* ni código roto.
+3. **Estrategia de Borrado Lógico (Soft Delete):** Con el fin de resguardar la integridad referencial y mantener intacto el historial contable de auditoría en la tabla de movimientos, se descartó el uso de operaciones `DELETE` físicas. En su lugar, se diseñó e implementó un sistema de borrado lógico mediante una bandera (`activo: boolean`) controlada desde el cliente, asegurando la consistencia relacional de la base de datos de manera definitiva.
 
 ## 📋 Requisitos del Sistema (Vistas Implementadas)
 
 1. **Dashboard Principal:** Resumen visual de métricas del negocio (Stock bajo, valor total del inventario en base a precio × stock) junto a una tabla interactiva de productos con filtros combinados por búsqueda de texto (Nombre/SKU) y categorías.
 2. **Formulario de Productos:** Flujo unificado que maneja la creación y edición dinámica de registros en Supabase usando parámetros de URL (`searchParams`), manteniendo el proyecto compacto y sólido.
 3. **Historial de Movimientos:** Módulo de auditoría que registra en tiempo real las entradas y salidas de stock con motivos específicos, resolviendo la relación de llaves foráneas (`JOIN`) con la tabla de productos.
+4. **Baja de Productos (UX/UI Optimizada):** Se integró un botón de eliminación que despliega una interfaz de confirmación modal nativa en React y Tailwind CSS, evitando alertas intrusivas del navegador y notificando el éxito de la operación mediante un banner flotante (Toast) temporizado.
 
 ## 🚀 Instalación y Ejecución Local
 
