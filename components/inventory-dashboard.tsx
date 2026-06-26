@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
-import { Pencil, Plus, Search } from "lucide-react"
+import { Pencil, Plus, Search, Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -36,6 +36,10 @@ export function InventoryDashboard() {
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState("")
   const [category, setCategory] = useState<string>(ALL_CATEGORIES)
+  
+  // 👇 CORRECCIÓN 1: Los estados de UI deben ir DENTRO del componente
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
 
   // Cargar datos en tiempo real desde Supabase
   useEffect(() => {
@@ -45,6 +49,7 @@ export function InventoryDashboard() {
         const { data, error } = await supabase
           .from("productos")
           .select("*")
+          .eq("activo", true)
           .order("nombre", { ascending: true })
 
         if (error) {
@@ -92,8 +97,40 @@ export function InventoryDashboard() {
       }
     }
 
-    fetchProducts() // 
+    fetchProducts()
   }, [])
+
+  // 👇 CORRECCIÓN 2: Lógica unificada y limpia para el Soft Delete
+  const confirmDeleteProduct = async () => {
+    if (!deleteTarget) return
+
+    try {
+      const { error } = await supabase
+        .from("productos")
+        .update({ activo: false })
+        .eq("id", deleteTarget.id)
+
+      if (error) {
+        console.error("❌ Error al aplicar Soft Delete:", error)
+        setToastMessage("Error: No se pudo dar de baja el producto.")
+        return
+      }
+
+      // Actualizamos la lista local en React
+      setProducts((prev) => prev.filter((p) => p.id !== deleteTarget.id))
+      
+      // Disparamos la notificación de éxito
+      setToastMessage(`Producto "${deleteTarget.name}" dado de baja correctamente.`)
+      
+      // Auto-ocultamos la notificación después de 3 segundos
+      setTimeout(() => setToastMessage(null), 3000)
+
+    } catch (err) {
+      console.error("❌ Excepción al intentar dar de baja:", err)
+    } finally {
+      setDeleteTarget(null)
+    }
+  }
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -190,6 +227,16 @@ export function InventoryDashboard() {
                     >
                       <Pencil className="size-4" />
                     </Button>
+
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      onClick={() => setDeleteTarget({ id: product.id, name: product.name })}
+                      aria-label={`Eliminar ${product.name}`}
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -208,6 +255,52 @@ export function InventoryDashboard() {
           Mostrando {formatNumber(filtered.length)} de {formatNumber(products.length)} productos
         </div>
       </Card>
+
+      {/* ========================================================================= */}
+      {/* 🛡️ MODAL DE CONFIRMACIÓN ESTILIZADA */}
+      {/* ========================================================================= */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <Card className="w-full max-w-md p-6 shadow-xl border border-border bg-popover text-popover-foreground animate-in zoom-in-95 duration-200">
+            <h3 className="text-lg font-semibold tracking-tight text-foreground">
+              ¿Confirmar baja del producto?
+            </h3>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Estás por dar de baja <span className="font-medium text-foreground">"{deleteTarget.name}"</span>. 
+              El producto dejará de mostrarse en la grilla del inventario pero se conservará su historial de movimientos.
+            </p>
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <Button 
+                variant="outline" 
+                onClick={() => setDeleteTarget(null)}
+              >
+                Cancelar
+              </Button>
+              <Button 
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={confirmDeleteProduct}
+              >
+                Confirmar Baja
+              </Button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 🔔 TOAST / NOTIFICACIÓN FLOTANTE */}
+      {/* ========================================================================= */}
+      {toastMessage && (
+        <div className="fixed bottom-4 right-4 z-50 max-w-md bg-zinc-950 text-zinc-50 dark:bg-zinc-50 dark:text-zinc-900 px-4 py-3 rounded-lg shadow-lg border border-border/40 text-sm font-medium flex items-center justify-between gap-4 animate-in slide-in-from-bottom-5 duration-300">
+          <span>{toastMessage}</span>
+          <button 
+            onClick={() => setToastMessage(null)} 
+            className="opacity-70 hover:opacity-100 font-bold px-1"
+          >
+            ✕
+          </button>
+        </div>
+      )}
     </div>
   )
 }
