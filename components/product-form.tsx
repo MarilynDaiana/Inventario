@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState, type FormEvent } from "react"
-import { ImageIcon, Loader2 } from "lucide-react"
+import { ImageIcon, Loader2, Upload } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -52,12 +52,15 @@ export function ProductForm({ product }: ProductFormProps) {
           category: product.category,
           price: product.price,
           stock: product.stock,
-          imageUrl: product.imageUrl,
+          imageUrl: (product as any).imagen_url || product.imageUrl,
         }
       : EMPTY,
   )
   const [errors, setErrors] = useState<Errors>({})
   const [submitting, setSubmitting] = useState(false)
+  
+  // Estado local para almacenar el archivo seleccionado antes de subirlo
+  const [imageFile, setImageFile] = useState<File | null>(null)
 
   function update<K extends keyof ProductFormValues>(key: K, value: ProductFormValues[K]) {
     setValues((prev) => ({ ...prev, [key]: value }))
@@ -76,13 +79,41 @@ export function ProductForm({ product }: ProductFormProps) {
     return Object.keys(next).length === 0
   }
 
+  // Función interna para subir el archivo seleccionado al Storage
+  async function uploadImage(file: File): Promise<string> {
+    const fileExt = file.name.split('.').pop()
+    // Creamos un nombre único usando un timestamp para evitar colisiones
+    const fileName = `${Date.now()}.${fileExt}`
+
+    // 1. Subir la imagen real al bucket público 'productos'
+    const { error: uploadError } = await supabase.storage
+      .from("productos")
+      .upload(fileName, file)
+
+    if (uploadError) throw uploadError
+
+    // 2. Resolver la URL pública que generó Supabase
+    const { data } = supabase.storage
+      .from("productos")
+      .getPublicUrl(fileName)
+
+    return data.publicUrl
+  }
+
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!validate()) return
     setSubmitting(true)
 
     try {
-      // Preparamos el objeto con los nombres exactos de la base de datos (Postgres)
+      let finalImageUrl = values.imageUrl
+
+      // Si el usuario seleccionó un archivo físico nuevo, lo subimos primero
+      if (imageFile) {
+        finalImageUrl = await uploadImage(imageFile)
+      }
+
+      // Preparamos el objeto con los nombres exactos de la base de datos, mapeando la imagen
       const databasePayload = {
         nombre: values.name,
         sku: values.sku,
@@ -90,6 +121,7 @@ export function ProductForm({ product }: ProductFormProps) {
         categoria: values.category,
         precio: values.price,
         stock: values.stock,
+        imagen_url: finalImageUrl, // Guardamos la URL pública en la tabla de productos
       }
 
       if (isEditing && product) {
@@ -105,8 +137,8 @@ export function ProductForm({ product }: ProductFormProps) {
         const { data: nuevoProducto, error: errorProducto } = await supabase
           .from("productos")
           .insert([databasePayload])
-          .select() // CLAVE: Devuelve las columnas calculadas/generadas
-          .single() // Asegura que retorne un objeto directo y no un array
+          .select()
+          .single()
 
         if (errorProducto) throw errorProducto
 
@@ -116,7 +148,7 @@ export function ProductForm({ product }: ProductFormProps) {
             .from("movimientos")
             .insert([
               {
-                producto_id: nuevoProducto.id, // Mapea la FK con el uuid del producto
+                producto_id: nuevoProducto.id,
                 tipo: "entrada",
                 cantidad: Number(nuevoProducto.stock),
                 motivo: "Carga inicial de producto",
@@ -124,7 +156,6 @@ export function ProductForm({ product }: ProductFormProps) {
             ])
 
           if (errorMovimiento) {
-            // Un log por si falla el historial, pero no frena el flujo principal
             console.error("❌ Error real en movimientos:", errorMovimiento.message, errorMovimiento.details)
           }
         }
@@ -223,37 +254,61 @@ export function ProductForm({ product }: ProductFormProps) {
                 value={Number.isNaN(values.stock) ? "" : values.stock}
                 onChange={(e) => update("stock", e.target.valueAsNumber)}
                 aria-invalid={Boolean(errors.stock)}
+                disabled={isEditing} // Tradicionalmente no alteras stock inicial directo en edición
               />
               {errors.stock ? <FieldError>{errors.stock}</FieldError> : null}
             </div>
           </div>
 
+          {/* Sección de Carga de Imagen por Archivo Real */}
           <div className="grid gap-2">
-            <Label htmlFor="imageUrl">Imagen (URL)</Label>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-dashed border-border bg-muted text-muted-foreground">
-                {values.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
+            <Label>Imagen del Producto</Label>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+              {/* Contenedor de Vista Previa */}
+              <div className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-dashed border-zinc-800 bg-[#1a1a1e] text-zinc-500">
+                {imageFile ? (
                   <img
-                    src={values.imageUrl || "/placeholder.svg"}
-                    alt="Vista previa del producto"
+                    src={URL.createObjectURL(imageFile)}
+                    alt="Previsualización"
+                    className="size-full object-cover"
+                  />
+                ) : values.imageUrl ? (
+                  <img
+                    src={values.imageUrl}
+                    alt="Imagen de Supabase"
                     className="size-full object-cover"
                   />
                 ) : (
-                  <ImageIcon className="size-5" />
+                  <ImageIcon className="size-6 text-zinc-600" />
                 )}
               </div>
-              <Input
-                id="imageUrl"
-                value={values.imageUrl}
-                onChange={(e) => update("imageUrl", e.target.value)}
-                placeholder="https://…/imagen.png"
-                className="flex-1"
-              />
+
+              {/* Selector e Input de Archivo Físico */}
+              <div className="flex-1">
+                <div className="relative flex items-center justify-center rounded-lg border border-zinc-800 bg-[#121214] p-3 text-center transition hover:border-zinc-700 cursor-pointer">
+                  <input
+                    type="file"
+                    id="file-upload"
+                    accept="image/*"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        setImageFile(e.target.files[0])
+                      }
+                    }}
+                    className="absolute inset-0 size-full opacity-0 cursor-pointer"
+                  />
+                  <div className="flex items-center gap-2 text-sm text-zinc-400">
+                    <Upload className="size-4 text-zinc-500" />
+                    <span>{imageFile ? "Cambiar foto" : "Subir imagen desde el equipo"}</span>
+                  </div>
+                </div>
+                {imageFile && (
+                  <p className="text-[11px] text-emerald-400 mt-1">
+                    ✓ Imagen seleccionada: {imageFile.name}
+                  </p>
+                )}
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Mockup de carga: por ahora puedes pegar una URL de imagen.
-            </p>
           </div>
 
           <div className="flex items-center justify-end gap-2 border-t border-border pt-5">
