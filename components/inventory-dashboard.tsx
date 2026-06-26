@@ -92,7 +92,7 @@ export function InventoryDashboard() {
       }
     }
 
-    fetchProducts() // 👈 ¡Llamamos a la función aquí para que se ejecute al montar el componente!
+    fetchProducts() // 
   }, [])
 
   const filtered = useMemo(() => {
