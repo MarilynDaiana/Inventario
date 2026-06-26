@@ -1,7 +1,7 @@
 "use client"
 
-import { useMemo, useState } from "react"
-import { ArrowDownLeft, ArrowUpRight } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
+import { ArrowDownLeft, ArrowUpRight, Loader2 } from "lucide-react"
 
 import { Card } from "@/components/ui/card"
 import {
@@ -21,15 +21,76 @@ import {
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
 import { formatDateTime, formatNumber } from "@/lib/format"
-import { MOCK_MOVEMENTS } from "@/lib/mock-data"
+import { supabase } from "@/lib/supabase"
 import { MOVEMENT_LABELS, type Movement, type MovementType } from "@/lib/types"
 
 const ALL = "all"
 
+// Estructura interna para el tipado de la respuesta de Supabase
+interface SupabaseMovement {
+  id: string
+  producto_id: string
+  tipo: string
+  cantidad: number
+  motivo: string
+  created_at: string
+  productos: {
+    nombre: string
+  } | null
+}
+
 export function MovementsView() {
-  // Local state seeded with mock data — swap for a Supabase query later.
-  const [movements] = useState<Movement[]>(MOCK_MOVEMENTS)
+  const [movements, setMovements] = useState<Movement[]>([])
   const [filter, setFilter] = useState<string>(ALL)
+  const [loading, setLoading] = useState<boolean>(true)
+
+  useEffect(() => {
+    async function fetchMovements() {
+      try {
+        setLoading(true)
+        
+        // Traemos los movimientos haciendo join relacional para capturar el nombre del producto
+        const { data, error } = await supabase
+          .from("movimientos")
+          .select(`
+            id,
+            producto_id,
+            tipo,
+            cantidad,
+            motivo,
+            created_at,
+            productos ( nombre )
+          `)
+          .order("created_at", { ascending: false })
+
+        if (error) throw error
+
+        // Transformamos los campos de la base de datos al formato que espera el componente
+        const mappedMovements: Movement[] = (data as unknown as SupabaseMovement[] || []).map((m) => {
+          // Normalizamos el tipo para que mapee con 'entrada' o 'salida' que usa MOVEMENT_LABELS
+          const normalizedType = m.tipo === "entrada" ? "entrada" : "salida"
+
+          return {
+            id: m.id,
+            productId: m.producto_id,
+            date: m.created_at,
+            productName: m.productos?.nombre || "Producto eliminado",
+            type: normalizedType as MovementType,
+            quantity: m.cantidad,
+            reason: m.motivo,
+          }
+        })
+
+        setMovements(mappedMovements)
+      } catch (err) {
+        console.error("Error al cargar el historial de movimientos:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchMovements()
+  }, [])
 
   const sorted = useMemo(
     () =>
@@ -73,7 +134,16 @@ export function MovementsView() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sorted.map((m) => (
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={5} className="h-24 text-center">
+                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="size-4 animate-spin" />
+                    Cargando historial desde Supabase...
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : sorted.map((m) => (
               <TableRow key={m.id}>
                 <TableCell className="whitespace-nowrap text-muted-foreground">
                   {formatDateTime(m.date)}
@@ -96,7 +166,7 @@ export function MovementsView() {
                 <TableCell className="text-muted-foreground">{m.reason}</TableCell>
               </TableRow>
             ))}
-            {sorted.length === 0 ? (
+            {!loading && sorted.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="h-24 text-center text-sm text-muted-foreground">
                   No hay movimientos para mostrar.
