@@ -14,7 +14,7 @@ Un sistema web completo, moderno y responsivo enfocado en la gestión eficiente 
 
 El sistema utiliza Supabase (PostgreSQL) como base de datos relacional. A continuación se detalla la estructura y relación de las tablas implementadas, incluyendo el soporte para borrado lógico (`activo`) e historial de auditoría de stock:
 
-![Modelo de Datos - Supabase](./public/bd.png)
+![Modelo de Datos - Supabase](./public/bd.PNG)
 
 ### ¿Por qué esta arquitectura?
 Se eligió **Next.js con App Router** por su capacidad para combinar Server Components (carga de datos ultra rápida desde el servidor en la página de edición/creación) con Client Components para la interactividad de las tablas y filtros. **Supabase** permitió acelerar el desarrollo del backend sin sacrificar la robustez de una base de datos relacional con integridad referencial, ideal para vincular productos con sus respectivos movimientos de stock.
