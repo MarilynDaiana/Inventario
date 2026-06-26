@@ -32,6 +32,27 @@ La IA suele ignorar restricciones profundas de backend o tipados estrictos. Dura
 2. **Tipado Estricto en TypeScript:** Corregí inconsistencias donde la IA omitía la propiedad obligatoria `status` al mapear las respuestas de la base de datos hacia las interfaces del cliente, asegurando que la aplicación compile sin *warnings* ni código roto.
 3. **Estrategia de Borrado Lógico (Soft Delete):** Con el fin de resguardar la integridad referencial y mantener intacto el historial contable de auditoría en la tabla de movimientos, se descartó el uso de operaciones `DELETE` físicas. En su lugar, se diseñó e implementó un sistema de borrado lógico mediante una bandera (`activo: boolean`) controlada desde el cliente, asegurando la consistencia relacional de la base de datos de manera definitiva.
 
+## 🚀 Almacenamiento de Imágenes y Decisiones Técnicas
+
+Originalmente, el formulario de productos utilizaba un campo de texto plano para ingresar URLs de imágenes de prueba (Mockups). Para llevar el sistema a un entorno real y productivo, se implementó un flujo completo de carga de archivos físicos:
+
+1. **Infraestructura de Almacenamiento (Supabase Storage):**
+   * Se creó un bucket público llamado `productos` para almacenar de forma eficiente los archivos binarios de las imágenes.
+   * Se configuró con acceso público (`Public bucket`) para permitir que cualquier navegador web pueda renderizar las fotos directamente mediante URLs optimizadas.
+
+2. **Seguridad mediante Row-Level Security (RLS):**
+   * Inicialmente, las inserciones eran rechazadas por las políticas estrictas de Postgres (`StorageApiError: new row violates row-level security policy`).
+   * Para solucionarlo, se diseñaron e implementaron dos políticas específicas de seguridad para el rol público (`anon`/`public`):
+     * **Política de Inserción (`INSERT`):** Permite a la aplicación Next.js subir los archivos directamente al bucket desde el cliente sin trabas de extensiones ni subcarpetas complejas.
+     * **Política de Lectura (`SELECT`):** Garantiza que las imágenes puedan ser consultadas y visualizadas correctamente en el Dashboard y el Historial de Movimientos.
+
+3. **Evolución del Esquema de la Base de Datos:**
+   * Se alteró la estructura de la tabla `productos` añadiendo la columna `imagen_url` (tipo `text`), permitiendo persistir la URL pública devuelta por el Storage de Supabase de manera integrada con el resto de los datos del producto (nombre, SKU, precio, stock).
+
+4. **Experiencia de Usuario (UX) en el Frontend:**
+   * Se modificó el componente `components/product-form.tsx` para soportar estados locales que manejan el archivo binario (`File`).
+   * Se incorporó una previsualización inmediata en tiempo de ejecución utilizando `URL.createObjectURL(imageFile)`, evitando que el usuario deba esperar a que termine la subida a internet para ver su foto.
+
 ## 📋 Requisitos del Sistema (Vistas Implementadas)
 
 1. **Dashboard Principal:** Resumen visual de métricas del negocio (Stock bajo, valor total del inventario en base a precio × stock) junto a una tabla interactiva de productos con filtros combinados por búsqueda de texto (Nombre/SKU) y categorías.
