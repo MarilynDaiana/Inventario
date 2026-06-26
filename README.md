@@ -8,6 +8,35 @@ Un sistema web completo, moderno y responsivo enfocado en la gestión eficiente 
 - **Backend & Base de Datos:** Supabase (BaaS) para la persistencia de datos relacionales en PostgreSQL y manejo ágil del inventario.
 - **Despliegue:** Vercel (Integración Continua / Despliegue Continuo).
 
+### 📐 Modelo de Datos (DER)
+
+El sistema utiliza Supabase (PostgreSQL) como base de datos relacional. A continuación se detalla la estructura y relación de las tablas implementadas, incluyendo el soporte para borrado lógico (`activo`) e historial de auditoría de stock:
+
+```mermaid
+erDiagram
+    productos {
+        uuid id PK
+        text nombre
+        text sku
+        text descripcion
+        text categoria
+        numeric precio
+        int4 stock
+        timestamptz created_at
+        bool activo
+    }
+
+    movimientos {
+        uuid id PK
+        uuid producto_id FK
+        text tipo
+        int4 cantidad
+        text motivo
+        timestamptz created_at
+    }
+
+    productos ||--o{ movimientos : "registra"
+
 ### ¿Por qué esta arquitectura?
 Se eligió **Next.js con App Router** por su capacidad para combinar Server Components (carga de datos ultra rápida desde el servidor en la página de edición/creación) con Client Components para la interactividad de las tablas y filtros. **Supabase** permitió acelerar el desarrollo del backend sin sacrificar la robustez de una base de datos relacional con integridad referencial, ideal para vincular productos con sus respectivos movimientos de stock.
 
