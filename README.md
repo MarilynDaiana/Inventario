@@ -1,26 +1,56 @@
 # Sistema de Gestión de Inventario 🚀
 
-Un sistema web completo, moderno y responsivo enfocado en la gestión eficiente de stock y auditoría de movimientos de productos. Desarrollado como parte del proceso de selección para el puesto de Software Engineer Web en AranguriApps.
+Un sistema web completo, moderno y responsivo enfocado en la gestión eficiente de stock y auditoría de movimientos de productos. Desarrollado en un plazo de 7 días como parte del proceso de selección para el puesto de Software Engineer Web en AranguriApps.
 
 ## 🛠️ Stack Tecnológico & Arquitectura
 
 - **Frontend:** Next.js 14+ (App Router) con TypeScript y Tailwind CSS para una interfaz limpia, tipada y de alto rendimiento.
-- **Backend & Base de Datos:** Supabase (BaaS) para la persistencia de datos, autenticación y manejo eficiente de estados del inventario.
+- **Backend & Base de Datos:** Supabase (BaaS) para la persistencia de datos relacionales en PostgreSQL y manejo ágil del inventario.
 - **Despliegue:** Vercel (Integración Continua / Despliegue Continuo).
 
-## 🤖 Orquestación de Inteligencia Artificial (IA)
+### ¿Por qué esta arquitectura?
+Se eligió **Next.js con App Router** por su capacidad para combinar Server Components (carga de datos ultra rápida desde el servidor en la página de edición/creación) con Client Components para la interactividad de las tablas y filtros. **Supabase** permitió acelerar el desarrollo del backend sin sacrificar la robustez de una base de datos relacional con integridad referencial, ideal para vincular productos con sus respectivos movimientos de stock.
 
-En línea con los requerimientos modernos de velocidad y optimización, este proyecto implementa un flujo de trabajo asistido por IA:
-- **v0 de Vercel (Generativa UI):** Utilizada para prototipar rápidamente las 3 vistas principales de la aplicación (Dashboard, Formulario de productos e Historial de movimientos), logrando interfaces altamente estéticas y optimizadas desde el día uno.
-- **GitHub Copilot:** Integrado en el entorno de desarrollo local (VS Code) para acelerar la escritura de la lógica de negocio, auditar el tipado estricto de TypeScript y agilizar las consultas a la base de datos de Supabase.
+## 🤖 Orquestación de Inteligencia Artificial & Criterio de Auditoría
 
+En línea con los requerimientos modernos de velocidad y optimización, este proyecto implementa un flujo de trabajo asistido por IA, donde el valor agregado radicó en el **criterio técnico y auditoría humana**:
+
+- **v0 de Vercel (Generativa UI):** Utilizada para prototipar rápidamente las vistas principales de la aplicación (Dashboard, Formulario e Historial), garantizando interfaces estéticas y accesibles desde el día uno.
+- **Asistentes LLM & GitHub Copilot:** Integrados para acelerar la escritura de la lógica de negocio y mapeos de datos.
+
+### 🛡️ Casos de Auditoría y QA Propio (Resolución de Conflictos):
+La IA suele ignorar restricciones profundas de backend o tipados estrictos. Durante el desarrollo, tomé el rol de auditora principal en los siguientes escenarios críticos:
+1. **Validación de Constraints en Postgres:** Al integrar el formulario con Supabase, la IA generaba strings genéricos para los tipos de movimientos. Tuve que intervenir el código para sincronizar los datos del frontend con el `CHECK CONSTRAINT` de la base de datos, evitando fallos de inserción silenciosos.
+2. **Tipado Estricto en TypeScript:** Corregí inconsistencias donde la IA omitía la propiedad obligatoria `status` al mapear las respuestas de la base de datos hacia las interfaces del cliente, asegurando que la aplicación compile sin *warnings* ni código roto.
 
 ## 📋 Requisitos del Sistema (Vistas Implementadas)
 
-1. **Dashboard Principal:** Resumen visual de métricas (Stock bajo, valor total) junto a la tabla interactiva de productos con filtros de búsqueda y categorías.
-2. **Formulario de Productos:** Creación y edición dinámica de registros con validaciones visuales.
-3. **Historial de Movimientos:** Módulo de auditoría que registra entradas y salidas de stock con motivos específicos.
+1. **Dashboard Principal:** Resumen visual de métricas del negocio (Stock bajo, valor total del inventario en base a precio × stock) junto a una tabla interactiva de productos con filtros combinados por búsqueda de texto (Nombre/SKU) y categorías.
+2. **Formulario de Productos:** Flujo unificado que maneja la creación y edición dinámica de registros en Supabase usando parámetros de URL (`searchParams`), manteniendo el proyecto compacto y sólido.
+3. **Historial de Movimientos:** Módulo de auditoría que registra en tiempo real las entradas y salidas de stock con motivos específicos, resolviendo la relación de llaves foráneas (`JOIN`) con la tabla de productos.
 
 ## 🚀 Instalación y Ejecución Local
 
-*(Próximamente se completarán los pasos detallados de instalación a medida que integremos las variables de entorno de Supabase)*
+Para correr este proyecto localmente, seguí estos pasos:
+
+1. **Clonar el repositorio:**
+   ```bash
+   git clone [https://github.com/MarilynDaiana/Inventario.git](https://github.com/MarilynDaiana/Inventario.git)
+   cd Inventario
+
+2. Instalar dependencias
+    ```bash
+    npm install
+
+3. Configurar variables de entorno:
+    Creá un archivo .env.local en la raíz del proyecto y agregá tus credenciales de Supabase:
+
+    NEXT_PUBLIC_SUPABASE_URL=tu_url_de_supabase
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=tu_clave_anonima_publica
+
+4. Iniciar el servidor de desarrollo:
+    Bash
+    npm run dev
+
+5. Abrí http://localhost:3000 en tu navegador para ver el resultado.
+
