@@ -42,7 +42,7 @@ export default async function ProductFormPage({
       price: Number(productoDb.precio),
       stock: productoDb.stock,
       status: currentStatus,
-      imageUrl: productoDb.imageUrl || "",
+      imageUrl: productoDb.imagen_url || "",
     }
   }
 

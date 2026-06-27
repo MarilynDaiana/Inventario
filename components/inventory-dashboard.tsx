@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
-import { Pencil, Plus, Search, Trash2 } from "lucide-react"
+import { ImageIcon, Pencil, Plus, Search, Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -37,7 +37,6 @@ export function InventoryDashboard() {
   const [query, setQuery] = useState("")
   const [category, setCategory] = useState<string>(ALL_CATEGORIES)
   
-  // 👇 CORRECCIÓN 1: Los estados de UI deben ir DENTRO del componente
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
   const [toastMessage, setToastMessage] = useState<string | null>(null)
 
@@ -85,7 +84,7 @@ export function InventoryDashboard() {
             price: Number(p.precio),
             stock: p.stock,
             status: currentStatus,
-            imageUrl: "",
+            imageUrl: p.imagen_url || "", // 🟢 CORRECCIÓN: Mapeamos la columna de la BD
           }
         })
 
@@ -100,7 +99,7 @@ export function InventoryDashboard() {
     fetchProducts()
   }, [])
 
-  // 👇 CORRECCIÓN 2: Lógica unificada y limpia para el Soft Delete
+  // Lógica unificada y limpia para el Soft Delete
   const confirmDeleteProduct = async () => {
     if (!deleteTarget) return
 
@@ -112,17 +111,12 @@ export function InventoryDashboard() {
 
       if (error) {
         console.error("❌ Error al aplicar Soft Delete:", error)
-        setToastMessage("Error: No se pudo dar de baja el producto.")
+        toastMessage && setToastMessage("Error: No se pudo dar de baja el producto.")
         return
       }
 
-      // Actualizamos la lista local en React
       setProducts((prev) => prev.filter((p) => p.id !== deleteTarget.id))
-      
-      // Disparamos la notificación de éxito
       setToastMessage(`Producto "${deleteTarget.name}" dado de baja correctamente.`)
-      
-      // Auto-ocultamos la notificación después de 3 segundos
       setTimeout(() => setToastMessage(null), 3000)
 
     } catch (err) {
@@ -191,6 +185,7 @@ export function InventoryDashboard() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[60px]">Imagen</TableHead>
                 <TableHead>Nombre</TableHead>
                 <TableHead>SKU</TableHead>
                 <TableHead>Categoría</TableHead>
@@ -203,12 +198,27 @@ export function InventoryDashboard() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={8} className="h-24 text-center text-sm text-muted-foreground">
                     Cargando inventario desde Supabase...
                   </TableCell>
                 </TableRow>
               ) : filtered.map((product) => (
                 <TableRow key={product.id}>
+                  {/* 🟢 CELDA DE LA IMAGEN CON FALLBACK */}
+                  <TableCell>
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md border border-zinc-800 bg-[#1a1a1e]">
+                      {product.imageUrl ? (
+                        <img
+                          src={product.imageUrl}
+                          alt={product.name}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <ImageIcon className="h-5 w-5 text-zinc-600" />
+                      )}
+                    </div>
+                  </TableCell>
+                  
                   <TableCell className="font-medium text-foreground">{product.name}</TableCell>
                   <TableCell className="font-mono text-xs text-muted-foreground">{product.sku}</TableCell>
                   <TableCell className="text-muted-foreground">{product.category}</TableCell>
@@ -242,7 +252,7 @@ export function InventoryDashboard() {
               ))}
               {!loading && filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center text-sm text-muted-foreground">
+                  <TableCell colSpan={8} className="h-24 text-center text-sm text-muted-foreground">
                     No se encontraron productos con los filtros actuales o la base de datos está vacía.
                   </TableCell>
                 </TableRow>
@@ -256,9 +266,7 @@ export function InventoryDashboard() {
         </div>
       </Card>
 
-      {/* ========================================================================= */}
-      {/* 🛡️ MODAL DE CONFIRMACIÓN ESTILIZADA */}
-      {/* ========================================================================= */}
+      {/* MODAL DE CONFIRMACIÓN */}
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-in fade-in duration-200">
           <Card className="w-full max-w-md p-6 shadow-xl border border-border bg-popover text-popover-foreground animate-in zoom-in-95 duration-200">
@@ -287,9 +295,7 @@ export function InventoryDashboard() {
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* 🔔 TOAST / NOTIFICACIÓN FLOTANTE */}
-      {/* ========================================================================= */}
+      {/* TOAST / NOTIFICACIÓN */}
       {toastMessage && (
         <div className="fixed bottom-4 right-4 z-50 max-w-md bg-zinc-950 text-zinc-50 dark:bg-zinc-50 dark:text-zinc-900 px-4 py-3 rounded-lg shadow-lg border border-border/40 text-sm font-medium flex items-center justify-between gap-4 animate-in slide-in-from-bottom-5 duration-300">
           <span>{toastMessage}</span>

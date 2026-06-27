@@ -31,6 +31,7 @@ La IA suele ignorar restricciones profundas de backend o tipados estrictos. Dura
 1. **Validación de Constraints en Postgres:** Al integrar el formulario con Supabase, la IA generaba strings genéricos para los tipos de movimientos. Tuve que intervenir el código para sincronizar los datos del frontend con el `CHECK CONSTRAINT` de la base de datos, evitando fallos de inserción silenciosos.
 2. **Tipado Estricto en TypeScript:** Corregí inconsistencias donde la IA omitía la propiedad obligatoria `status` al mapear las respuestas de la base de datos hacia las interfaces del cliente, asegurando que la aplicación compile sin *warnings* ni código roto.
 3. **Estrategia de Borrado Lógico (Soft Delete):** Con el fin de resguardar la integridad referencial y mantener intacto el historial contable de auditoría en la tabla de movimientos, se descartó el uso de operaciones `DELETE` físicas. En su lugar, se diseñó e implementó un sistema de borrado lógico mediante una bandera (`activo: boolean`) controlada desde el cliente, asegurando la consistencia relacional de la base de datos de manera definitiva.
+4. **Resolución de Errores de Hidratación en Next.js:** Durante la reestructuración de la tabla del Dashboard para incorporar la nueva columna de imágenes, identifiqué y solucioné un fallo de hidratación provocado por nodos de texto/espacios en blanco inválidos generados de manera asíncrona dentro de las etiquetas estructurales <tr> y <thead>. Corregí la sintaxis del JSX asegurando un árbol de renderizado idéntico entre el servidor (SSR) y el cliente.
 
 ## 🚀 Almacenamiento de Imágenes y Decisiones Técnicas
 
@@ -53,6 +54,10 @@ Originalmente, el formulario de productos utilizaba un campo de texto plano para
    * Se modificó el componente `components/product-form.tsx` para soportar estados locales que manejan el archivo binario (`File`).
    * Se incorporó una previsualización inmediata en tiempo de ejecución utilizando `URL.createObjectURL(imageFile)`, evitando que el usuario deba esperar a que termine la subida a internet para ver su foto.
 
+4. **Mapeo Resiliente y Fallbacks de UI:**
+   * Al conectar la base de datos con la grilla principal, la IA tendía a ignorar las diferencias entre las convenciones de nombres de la base de datos (imagen_url en Postgres) y el tipado del cliente (imageUrl en TypeScript). Intervine la función de carga (fetchProducts) para asegurar un mapeo limpio y estricto de las propiedades.
+   * Además, se diseñó un sistema de fallback visual utilizando componentes de Lucide (ImageIcon) dentro de un contenedor estilizado. Esto garantiza que si un producto antiguo no posee una imagen cargada (o si el campo viene vacío), la interfaz de usuario mantenga una estructura limpia, simétrica y libre de imágenes rotas.
+
 ## 📋 Requisitos del Sistema (Vistas Implementadas)
 
 1. **Dashboard Principal:** Resumen visual de métricas del negocio (Stock bajo, valor total del inventario en base a precio × stock) junto a una tabla interactiva de productos con filtros combinados por búsqueda de texto (Nombre/SKU) y categorías.
@@ -64,12 +69,14 @@ Originalmente, el formulario de productos utilizaba un campo de texto plano para
 ## 🧪 Pruebas Unitarias (Testing)
 
 El proyecto incluye pruebas unitarias automatizadas orientadas a asegurar la robustez de la lógica de negocio (cálculo de variaciones de stock dinámico y formateo de datos monetarios). 
+Tras las refactorizaciones de la base de datos para dar soporte a imágenes físicas, la suite de pruebas fue ejecutada con éxito garantizando regresión cero sobre las reglas críticas del negocio.
 
 Para la suite de pruebas se seleccionó **Vitest**, garantizando ejecuciones ultrarrápidas y compatibilidad total con TypeScript.
 
 Para correr los tests en un entorno local, ejecutá el siguiente comando:
     ```bash
     pnpm test
+    ```
 
 
 ## 🚀 Instalación y Ejecución Local

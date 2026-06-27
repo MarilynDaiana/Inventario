@@ -52,7 +52,7 @@ export function ProductForm({ product }: ProductFormProps) {
           category: product.category,
           price: product.price,
           stock: product.stock,
-          imageUrl: (product as any).imagen_url || product.imageUrl,
+          imageUrl: (product as any).imagen_url || product.imageUrl || "",
         }
       : EMPTY,
   )
