@@ -40,7 +40,7 @@ export interface ProductFormValues {
 }
 
 // Stock thresholds used to derive a product's status.
-export const LOW_STOCK_THRESHOLD = 10
+export const LOW_STOCK_THRESHOLD = 5
 
 export function deriveStatus(stock: number): ProductStatus {
   if (stock <= 0) return "out_of_stock"
