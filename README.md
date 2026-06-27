@@ -54,7 +54,7 @@ Originalmente, el formulario de productos utilizaba un campo de texto plano para
    * Se modificó el componente `components/product-form.tsx` para soportar estados locales que manejan el archivo binario (`File`).
    * Se incorporó una previsualización inmediata en tiempo de ejecución utilizando `URL.createObjectURL(imageFile)`, evitando que el usuario deba esperar a que termine la subida a internet para ver su foto.
 
-4. **Mapeo Resiliente y Fallbacks de UI:**
+5. **Mapeo Resiliente y Fallbacks de UI:**
    * Al conectar la base de datos con la grilla principal, la IA tendía a ignorar las diferencias entre las convenciones de nombres de la base de datos (imagen_url en Postgres) y el tipado del cliente (imageUrl en TypeScript). Intervine la función de carga (fetchProducts) para asegurar un mapeo limpio y estricto de las propiedades.
    * Además, se diseñó un sistema de fallback visual utilizando componentes de Lucide (ImageIcon) dentro de un contenedor estilizado. Esto garantiza que si un producto antiguo no posee una imagen cargada (o si el campo viene vacío), la interfaz de usuario mantenga una estructura limpia, simétrica y libre de imágenes rotas.
 
@@ -74,9 +74,7 @@ Tras las refactorizaciones de la base de datos para dar soporte a imágenes fís
 Para la suite de pruebas se seleccionó **Vitest**, garantizando ejecuciones ultrarrápidas y compatibilidad total con TypeScript.
 
 Para correr los tests en un entorno local, ejecutá el siguiente comando:
-    ```bash
     pnpm test
-    ```
 
 
 ## 🚀 Instalación y Ejecución Local
