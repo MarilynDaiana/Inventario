@@ -6,7 +6,7 @@ Un sistema web completo, moderno y responsivo enfocado en la gestión eficiente 
 
 - **Frontend:** Next.js 14+ (App Router) con TypeScript y Tailwind CSS para una interfaz limpia, tipada y de alto rendimiento.
 - **Backend & Base de Datos:** Supabase (BaaS) para la persistencia de datos relacionales en PostgreSQL y manejo ágil del inventario.
-- **Despliegue:** Vercel (Integración Continua / Despliegue Continuo).
+- **Despliegue (CI/CD Automatizado):** Vercel integrado directamente con el repositorio de GitHub. Cada *push* a la rama principal compila el proyecto automáticamente y despliega los cambios en producción en cuestión de segundos, garantizando un flujo de actualización continuo y sin fricción.
 
 
 
